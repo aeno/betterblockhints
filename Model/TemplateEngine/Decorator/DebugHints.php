@@ -11,14 +11,22 @@ class DebugHints extends BaseDebugHints
     protected $_subject;
     protected $_i = 0;
 
+    /** @var \Rsc\BetterBlockHints\Helper\Data */
+    protected $_helper;
+
     /**
      * @param \Magento\Framework\View\TemplateEngineInterface $subject
      * @param bool $showBlockHints Whether to include block into the debugging information or not
      */
-    public function __construct(TemplateEngineInterface $subject, $showBlockHints)
+    public function __construct(
+        TemplateEngineInterface $subject,
+        \Rsc\BetterBlockHints\Helper\Data $helper,
+        $showBlockHints
+    )
     {
         $this->_subject = $subject;
         $this->_showBlockHints = $showBlockHints;
+        $this->_helper = $helper;
     }
 
     public function render(BlockInterface $block, $templateFile, array $dictionary = [])
@@ -42,6 +50,7 @@ class DebugHints extends BaseDebugHints
                    . '</div>';
 
         $content .=   '<div class="debugging-hints__block-info" id="' . $debugBlockId . '" style="z-index:'.($this->_i+999).'">'
+                    . '     <a class="debug-block-close" href="javascript:hideDebugBlocks()">&times;</a>'
                     . (!empty($blockName) ? '     <strong>Block Name:</strong> ' . $blockName . '<br><br>' : '')
                     . '     <strong>Block Template:</strong> ' . $templateFile . '<br><br>'
                     . '     <strong>Block Class:</strong> ' . $blockClass . '<br><br>'
@@ -63,6 +72,8 @@ class DebugHints extends BaseDebugHints
     }
 
     protected function stylesScripts() {
+        $alwaysVisible = $this->_helper->isAlwaysVisible() ? 'true' : 'false';
+
         return <<<HTML
             <style type="text/css">
                 .debugging-hints {
@@ -107,6 +118,21 @@ class DebugHints extends BaseDebugHints
                     left: 50%;
                     transform: translate(-50%, -50%);
                 }
+                .debugging-hints__block-info a.debug-block-close {
+                    text-decoration: none;
+                    font-weight: bold;
+                    position: absolute;
+                    font-size: 19px;
+                    background: #000;
+                    top: -25px;
+                    right: -25px;
+                    line-height: 25px;
+                    color: #fff;
+                    font-family: sans-serif;
+                    width: 25px;
+                    height: 25px;
+                    text-align: center;
+                }
                 .debugging-hints__block-info strong {
                     display: block;
                     text-transform: uppercase;
@@ -142,19 +168,23 @@ class DebugHints extends BaseDebugHints
 
                 // Shift, alt, command, control
                 var keyToggles = [91, 93, 17, 16, 18]
-                addEvent(document, "keydown", function (e) {
-                    e = e || window.event
-                    if(keyToggles.indexOf(e.keyCode) > -1) {
-                        pathHintsOn()
-                    }
-                })
+                var alwaysVisible = {$alwaysVisible}
 
-                addEvent(document, "keyup", function (e) {
-                    e = e || window.event
-                    if(keyToggles.indexOf(e.keyCode) > -1) {
-                        pathHintsOff()
-                    }
-                })
+                if (!alwaysVisible) {
+                    addEvent(document, "keydown", function (e) {
+                        e = e || window.event
+                        if(keyToggles.indexOf(e.keyCode) > -1) {
+                            pathHintsOn()
+                        }
+                    })
+
+                    addEvent(document, "keyup", function (e) {
+                        e = e || window.event
+                        if(keyToggles.indexOf(e.keyCode) > -1) {
+                            pathHintsOff()
+                        }
+                    })
+                }
 
                 // Add events to our debug blocks
                 ready(function() {
@@ -170,6 +200,10 @@ class DebugHints extends BaseDebugHints
                             }
                         }
                     })
+
+                    if (alwaysVisible) {
+                        pathHintsOn()
+                    }
                 })
 
                 function showDebugBlock(id) {
@@ -177,10 +211,10 @@ class DebugHints extends BaseDebugHints
                         console.log(this)
                         var hintBlocks = document.querySelectorAll('.debugging-hints__block-info')
                         hintBlocks.forEach(function(hintBlock) {
-                        if(hintBlock.id == id) {
-                            hintBlock.style.display = 'block'
-                        } else {
-                            hintBlock.style.display = 'none'
+                            if(hintBlock.id == id) {
+                                hintBlock.style.display = 'block'
+                            } else {
+                                hintBlock.style.display = 'none'
                             }
                         })
                     }
