@@ -173,15 +173,17 @@ class DebugHints extends BaseDebugHints
                 })
 
                 function showDebugBlock(id) {
-                    console.log(this)
-                    var hintBlocks = document.querySelectorAll('.debugging-hints__block-info')
-                    hintBlocks.forEach(function(hintBlock) {
+                    if (document.body.classList.contains('pathHints')) {
+                        console.log(this)
+                        var hintBlocks = document.querySelectorAll('.debugging-hints__block-info')
+                        hintBlocks.forEach(function(hintBlock) {
                         if(hintBlock.id == id) {
                             hintBlock.style.display = 'block'
                         } else {
                             hintBlock.style.display = 'none'
-                        }
-                    })
+                            }
+                        })
+                    }
                 }
 
                 function hideDebugBlocks() {
